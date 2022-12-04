@@ -13,15 +13,15 @@
         <form asp-action="Create">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="ServiceId" class="control-label"></label>
+                Послуга
                 <select asp-for="ServiceId" class ="form-control" asp-items="ViewBag.ServiceId"></select>
             </div>
             <div class="form-group">
-                <label asp-for="ClientId" class="control-label"></label>
+                Клієнт
                 <select asp-for="ClientId" class ="form-control" asp-items="ViewBag.ClientId"></select>
             </div>
             <div class="form-group">
-                <label asp-for="Date" class="control-label"></label>
+                Дата
                 <input asp-for="Date" class="form-control" />
                 <span asp-validation-for="Date" class="text-danger"></span>
             </div>

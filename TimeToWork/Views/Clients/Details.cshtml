@@ -28,6 +28,29 @@
         <dd class = "col-sm-10">
             @Html.DisplayFor(model => model.PhoneNumber)
         </dd>
+
+        <dt class="col-sm-2">
+            Записи
+        </dt>
+        <dd class="col-sm-10">
+            <table class="table">
+                <tr>
+                    <th>Послуга</th>
+                    <th>Дата</th>
+                </tr>
+                @foreach (var item in Model.Appointments)
+                {
+                    <tr>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Service.ServiceName)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Date)
+                        </td>
+                    </tr>
+                }
+            </table>
+        </dd>
     </dl>
 </div>
 <div>

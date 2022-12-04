@@ -21,11 +21,50 @@ namespace TimeToWork.Views.ServiceProviders
         }
 
         // GET: ServiceProviders
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, int? pageNumber)
         {
-              return _context.ServiceProviders != null ? 
-                          View(await _context.ServiceProviders.ToListAsync()) :
-                          Problem("Entity set 'TimeToWorkContext.ServiceProviders'  is null.");
+            //return _context.ServiceProviders != null ? 
+            //            View(await _context.ServiceProviders.ToListAsync()) :
+            //            Problem("Entity set 'TimeToWorkContext.ServiceProviders'  is null.");
+
+            ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+            ViewData["DateSortParm"] = sortOrder == "Date" ? "date_desc" : "Date";
+            ViewData["CurrentFilter"] = searchString;
+            ViewData["CurrentSort"] = sortOrder;
+
+            if (searchString != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+
+            var serviceProviders = from s in _context.ServiceProviders
+                               select s;
+            if (!String.IsNullOrEmpty(searchString))
+            {
+                serviceProviders = serviceProviders.Where(s => s.LastName.Contains(searchString) || s.FirstName.Contains(searchString) || s.HireDate.ToString().Contains(searchString));
+            }
+            switch (sortOrder)
+            {
+                case "name_desc":
+                    serviceProviders = serviceProviders.OrderByDescending(s => s.LastName);
+                    break;
+                case "Date":
+                    serviceProviders = serviceProviders.OrderBy(s => s.HireDate);
+                    break;
+                case "date_desc":
+                    serviceProviders = serviceProviders.OrderByDescending(s => s.HireDate);
+                    break;
+                default:
+                    serviceProviders = serviceProviders.OrderBy(s => s.LastName);
+                    break;
+            }
+
+            int pageSize = 7;
+            return View(await PaginatedList<ServiceProvider>.CreateAsync(serviceProviders.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
 
         // GET: ServiceProviders/Details/5

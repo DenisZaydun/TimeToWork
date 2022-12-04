@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using TimeToWork.Data;
 using TimeToWork.Models;
@@ -20,11 +21,43 @@ namespace TimeToWork.Views.Clients
         }
 
         // GET: Clients
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, int? pageNumber)
         {
-              return _context.Clients != null ? 
-                          View(await _context.Clients.ToListAsync()) :
-                          Problem("Entity set 'TimeToWorkContext.Clients'  is null.");
+            //return _context.Clients != null ? 
+            //            View(await _context.Clients.ToListAsync()) :
+            //            Problem("Entity set 'TimeToWorkContext.Clients'  is null.");
+
+            ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+            ViewData["CurrentFilter"] = searchString;
+
+            if (searchString != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+
+            var clients = from s in _context.Clients
+                          select s;
+            if (!String.IsNullOrEmpty(searchString))
+            {
+                clients = clients.Where(s => s.LastName.Contains(searchString)
+                                       || s.FirstName.Contains(searchString));
+            }
+            switch (sortOrder)
+            {
+                case "name_desc":
+                    clients = clients.OrderByDescending(s => s.LastName);
+                    break;
+                default:
+                    clients = clients.OrderBy(s => s.LastName);
+                    break;
+            }
+            //return View(await clients.AsNoTracking().ToListAsync());
+            int pageSize = 7;
+            return View(await PaginatedList<Client>.CreateAsync(clients.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
 
         // GET: Clients/Details/5
@@ -35,7 +68,11 @@ namespace TimeToWork.Views.Clients
                 return NotFound();
             }
 
+
             var client = await _context.Clients
+                .Include(s => s.Appointments)
+                .ThenInclude(e => e.Service)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.ID == id);
             if (client == null)
             {

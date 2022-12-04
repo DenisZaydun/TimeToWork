@@ -20,11 +20,56 @@ namespace TimeToWork.Views.Appointments
         }
 
         // GET: Appointments
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, int? pageNumber)
         {
-            var timeToWorkContext = _context.Appointments.Include(a => a.Client).Include(a => a.Service);
-            return View(await timeToWorkContext.ToListAsync());
-        }
+			ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+			ViewData["DateSortParm"] = sortOrder == "Date" ? "date_desc" : "Date";
+			ViewData["ServiceSortParm"] = sortOrder == "Service" ? "service_desc" : "Service";
+			ViewData["CurrentFilter"] = searchString;
+			ViewData["CurrentSort"] = sortOrder;
+
+			if (searchString != null)
+			{
+				pageNumber = 1;
+			}
+			else
+			{
+				searchString = currentFilter;
+			}
+
+			var appointments = from s in _context.Appointments
+							   .Include(i => i.Client)
+							   .Include(e => e.Service)
+							   select s;
+			if (!String.IsNullOrEmpty(searchString))
+			{
+				appointments = appointments.Where(s => s.Client.LastName.Contains(searchString) || s.Client.FirstName.Contains(searchString) || s.Service.ServiceName.Contains(searchString) || s.Date.ToString().Contains(searchString));
+			}
+			switch (sortOrder)
+			{
+				case "name_desc":
+					appointments = appointments.OrderByDescending(s => s.Client.LastName);
+					break;
+				case "Date":
+					appointments = appointments.OrderBy(s => s.Date);
+					break;
+				case "date_desc":
+					appointments = appointments.OrderByDescending(s => s.Date);
+					break;
+				case "Service":
+					appointments = appointments.OrderBy(s => s.Service.ServiceName);
+					break;
+				case "service_desc":
+					appointments = appointments.OrderByDescending(s => s.Service.ServiceName);
+					break;
+				default:
+					appointments = appointments.OrderBy(s => s.Date);
+					break;
+			}
+
+			int pageSize = 7;
+			return View(await PaginatedList<Appointment>.CreateAsync(appointments.AsNoTracking(), pageNumber ?? 1, pageSize));
+		}
 
         // GET: Appointments/Details/5
         public async Task<IActionResult> Details(int? id)
@@ -49,8 +94,8 @@ namespace TimeToWork.Views.Appointments
         // GET: Appointments/Create
         public IActionResult Create()
         {
-            ViewData["ClientId"] = new SelectList(_context.Clients, "ID", "FirstName");
-            ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "ServiceId");
+            ViewData["ClientId"] = new SelectList(_context.Clients, "ID", "FullName");
+            ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "ServiceName");
             return View();
         }
 
@@ -67,8 +112,8 @@ namespace TimeToWork.Views.Appointments
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["ClientId"] = new SelectList(_context.Clients, "ID", "FirstName", appointment.ClientId);
-            ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "ServiceId", appointment.ServiceId);
+            ViewData["ClientId"] = new SelectList(_context.Clients, "ID", "FullName", appointment.ClientId);
+            ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "ServiceName", appointment.ServiceId);
             return View(appointment);
         }
 
@@ -85,8 +130,8 @@ namespace TimeToWork.Views.Appointments
             {
                 return NotFound();
             }
-            ViewData["ClientId"] = new SelectList(_context.Clients, "ID", "FirstName", appointment.ClientId);
-            ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "ServiceId", appointment.ServiceId);
+            ViewData["ClientId"] = new SelectList(_context.Clients, "ID", "FullName", appointment.ClientId);
+            ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "ServiceName", appointment.ServiceId);
             return View(appointment);
         }
 
@@ -122,8 +167,8 @@ namespace TimeToWork.Views.Appointments
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["ClientId"] = new SelectList(_context.Clients, "ID", "FirstName", appointment.ClientId);
-            ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "ServiceId", appointment.ServiceId);
+            ViewData["ClientId"] = new SelectList(_context.Clients, "ID", "FullName", appointment.ClientId);
+            ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "ServiceName", appointment.ServiceId);
             return View(appointment);
         }
 
