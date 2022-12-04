@@ -1,4 +1,9 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using TimeToWork.Data;
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddDbContext<TimeToWorkContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("TimeToWorkContext") ?? throw new InvalidOperationException("Connection string 'TimeToWorkContext' not found.")));
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
