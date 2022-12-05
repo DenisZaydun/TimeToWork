@@ -89,6 +89,9 @@ namespace TimeToWork.Views.ServiceProviders
         // GET: ServiceProviders/Create
         public IActionResult Create()
         {
+            var serviceProvider = new ServiceProvider();
+            serviceProvider.ServiceAssignments = new List<ServiceAssignment>();
+            PopulateAssignedServiceData(serviceProvider);
             return View();
         }
 
@@ -97,14 +100,32 @@ namespace TimeToWork.Views.ServiceProviders
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ID,LastName,FirstName,HireDate")] ServiceProvider serviceProvider)
+        public async Task<IActionResult> Create([Bind("ID,LastName,FirstName,HireDate")] ServiceProvider serviceProvider, string[] selectedServices)
         {
+            //if (ModelState.IsValid)
+            //{
+            //    _context.Add(serviceProvider);
+            //    await _context.SaveChangesAsync();
+            //    return RedirectToAction(nameof(Index));
+            //}
+            //return View(serviceProvider);
+
+            if (selectedServices != null)
+            {
+                serviceProvider.ServiceAssignments = new List<ServiceAssignment>();
+                foreach (var service in selectedServices)
+                {
+                    var courseToAdd = new ServiceAssignment { ServiceProviderID = serviceProvider.ID, ServiceID = int.Parse(service) };
+                    serviceProvider.ServiceAssignments.Add(courseToAdd);
+                }
+            }
             if (ModelState.IsValid)
             {
                 _context.Add(serviceProvider);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+            PopulateAssignedServiceData(serviceProvider);
             return View(serviceProvider);
         }
 
@@ -275,16 +296,25 @@ namespace TimeToWork.Views.ServiceProviders
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (_context.ServiceProviders == null)
-            {
-                return Problem("Entity set 'TimeToWorkContext.ServiceProviders'  is null.");
-            }
-            var serviceProvider = await _context.ServiceProviders.FindAsync(id);
-            if (serviceProvider != null)
-            {
-                _context.ServiceProviders.Remove(serviceProvider);
-            }
-            
+            //if (_context.ServiceProviders == null)
+            //{
+            //    return Problem("Entity set 'TimeToWorkContext.ServiceProviders'  is null.");
+            //}
+            //var serviceProvider = await _context.ServiceProviders.FindAsync(id);
+            //if (serviceProvider != null)
+            //{
+            //    _context.ServiceProviders.Remove(serviceProvider);
+            //}
+
+            //await _context.SaveChangesAsync();
+            //return RedirectToAction(nameof(Index));
+
+            ServiceProvider serviceProvider = await _context.ServiceProviders
+                .Include(i => i.ServiceAssignments)
+                .SingleAsync(i => i.ID == id);
+
+            _context.ServiceProviders.Remove(serviceProvider);
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
