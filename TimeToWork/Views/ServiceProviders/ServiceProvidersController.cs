@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using TimeToWork.Data;
 using TimeToWork.Models;
+using TimeToWork.Models.TimeToWorkViewModels;
 using ServiceProvider = TimeToWork.Models.ServiceProvider;
 
 namespace TimeToWork.Views.ServiceProviders
@@ -115,12 +116,36 @@ namespace TimeToWork.Views.ServiceProviders
                 return NotFound();
             }
 
-            var serviceProvider = await _context.ServiceProviders.FindAsync(id);
+            //var serviceProvider = await _context.ServiceProviders.FindAsync(id);
+
+            var serviceProvider = await _context.ServiceProviders
+                .Include(i => i.ServiceAssignments).ThenInclude(i => i.Service)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.ID == id);
+
             if (serviceProvider == null)
             {
                 return NotFound();
             }
+            PopulateAssignedServiceData(serviceProvider);
             return View(serviceProvider);
+        }
+
+        private void PopulateAssignedServiceData(ServiceProvider serviceProvider)
+        {
+            var allServices = _context.Services;
+            var serviceProviderServices = new HashSet<int>(serviceProvider.ServiceAssignments.Select(c => c.ServiceID));
+            var viewModel = new List<AssignedServiceData>();
+            foreach (var service in allServices)
+            {
+                viewModel.Add(new AssignedServiceData
+                {
+                    ServiceID = service.ServiceId,
+                    ServiceName = service.ServiceName,
+                    Assigned = serviceProviderServices.Contains(service.ServiceId)
+                });
+            }
+            ViewData["Services"] = viewModel;
         }
 
         // POST: ServiceProviders/Edit/5
@@ -128,34 +153,103 @@ namespace TimeToWork.Views.ServiceProviders
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("ID,LastName,FirstName,HireDate")] ServiceProvider serviceProvider)
+        public async Task<IActionResult> Edit(int? id, string[] selectedServices)
         {
-            if (id != serviceProvider.ID)
+            //if (id != serviceProvider.ID)
+            //{
+            //    return NotFound();
+            //}
+
+            //if (ModelState.IsValid)
+            //{
+            //    try
+            //    {
+            //        _context.Update(serviceProvider);
+            //        await _context.SaveChangesAsync();
+            //    }
+            //    catch (DbUpdateConcurrencyException)
+            //    {
+            //        if (!ServiceProviderExists(serviceProvider.ID))
+            //        {
+            //            return NotFound();
+            //        }
+            //        else
+            //        {
+            //            throw;
+            //        }
+            //    }
+            //    return RedirectToAction(nameof(Index));
+            //}
+            //return View(serviceProvider);
+
+            if (id == null)
             {
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
+            var serviceProviderToUpdate = await _context.ServiceProviders
+                .Include(i => i.ServiceAssignments)
+                    .ThenInclude(i => i.Service)
+                .FirstOrDefaultAsync(m => m.ID == id);
+
+            if (await TryUpdateModelAsync<ServiceProvider>(
+                serviceProviderToUpdate,
+                "",
+                i => i.FirstName, i => i.LastName, i => i.HireDate))
             {
+                //if (String.IsNullOrWhiteSpace(serviceProviderToUpdate.OfficeAssignment?.Location))
+                //{
+                //    serviceProviderToUpdate.OfficeAssignment = null;
+                //}
+                UpdateServiceProviderServices(selectedServices, serviceProviderToUpdate);
                 try
                 {
-                    _context.Update(serviceProvider);
                     await _context.SaveChangesAsync();
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (DbUpdateException /* ex */)
                 {
-                    if (!ServiceProviderExists(serviceProvider.ID))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    //Log the error (uncomment ex variable name and write a log.)
+                    ModelState.AddModelError("", "Unable to save changes. " +
+                        "Try again, and if the problem persists, " +
+                        "see your system administrator.");
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(serviceProvider);
+            UpdateServiceProviderServices(selectedServices, serviceProviderToUpdate);
+            PopulateAssignedServiceData(serviceProviderToUpdate);
+            return View(serviceProviderToUpdate);
+        }
+
+        private void UpdateServiceProviderServices(string[] selectedSerivces, ServiceProvider serviceProviderToUpdate)
+        {
+            if (selectedSerivces == null)
+            {
+                serviceProviderToUpdate.ServiceAssignments = new List<ServiceAssignment>();
+                return;
+            }
+
+            var selectedServicesHS = new HashSet<string>(selectedSerivces);
+            var serviceProviderServices = new HashSet<int>
+                (serviceProviderToUpdate.ServiceAssignments.Select(c => c.Service.ServiceId));
+            foreach (var service in _context.Services)
+            {
+                if (selectedServicesHS.Contains(service.ServiceId.ToString()))
+                {
+                    if (!serviceProviderServices.Contains(service.ServiceId))
+                    {
+                        serviceProviderToUpdate.ServiceAssignments.Add(new ServiceAssignment { ServiceProviderID = serviceProviderToUpdate.ID, ServiceID = service.ServiceId });
+                    }
+                }
+                else
+                {
+
+                    if (serviceProviderServices.Contains(service.ServiceId))
+                    {
+                        ServiceAssignment ServiceToRemove = serviceProviderToUpdate.ServiceAssignments.FirstOrDefault(i => i.ServiceID == service.ServiceId);
+                        _context.Remove(ServiceToRemove);
+                    }
+                }
+            }
         }
 
         // GET: ServiceProviders/Delete/5
