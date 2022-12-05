@@ -28,6 +28,35 @@
                 <input asp-for="HireDate" class="form-control" />
                 <span asp-validation-for="HireDate" class="text-danger"></span>
             </div>
+
+            <div class="form-group">
+            <div class="col-md-offset-2 col-md-10">
+                <table>
+                    <tr>
+                        @{
+                            int cnt = 0;
+                            List<TimeToWork.Models.TimeToWorkViewModels.AssignedServiceData> services = ViewBag.Services;
+
+                            foreach (var service in services)
+                            {
+                                if (cnt++ % 1 == 0)
+                                {
+                                    @:</tr><tr>
+                                }
+                                @:<td>
+                                <input type="checkbox"
+                                    name="selectedServices"
+                                    value="@service.ServiceID"
+                                    @(Html.Raw(service.Assigned ? "checked=\"checked\"" : "")) />
+                                @service.ServiceID @:  @service.ServiceName
+                                @:</td>
+                            }
+                    @:</tr>
+                    }
+                </table>
+            </div>
+            </div>
+
             <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />
             </div>
