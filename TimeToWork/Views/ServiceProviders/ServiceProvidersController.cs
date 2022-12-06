@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using TimeToWork.Data;
 using TimeToWork.Models;
 using TimeToWork.Models.TimeToWorkViewModels;
@@ -76,8 +77,9 @@ namespace TimeToWork.Views.ServiceProviders
                 return NotFound();
             }
 
-            var serviceProvider = await _context.ServiceProviders
+            var serviceProvider = await _context.ServiceProviders.Include(a => a.ServiceAssignments.Where(p => p.ServiceProviderID ==id).OrderBy(i => i.Service.ServiceName)).ThenInclude(q => q.Service)
                 .FirstOrDefaultAsync(m => m.ID == id);
+
             if (serviceProvider == null)
             {
                 return NotFound();
