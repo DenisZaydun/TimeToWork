@@ -68,7 +68,7 @@ namespace TimeToWork.Views.Services
                 return NotFound();
             }
 
-            var service = await _context.Services
+            var service = await _context.Services.Include(a => a.ServiceAssignments.Where(p => p.ServiceID == id).OrderBy(i => i.ServiceProvider.LastName)).ThenInclude(q => q.ServiceProvider)
                 .FirstOrDefaultAsync(m => m.ServiceId == id);
             if (service == null)
             {
