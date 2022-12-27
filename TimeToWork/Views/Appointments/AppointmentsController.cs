@@ -91,12 +91,41 @@ namespace TimeToWork.Views.Appointments
             return View(appointment);
         }
 
-        // GET: Appointments/Create
-        public IActionResult Create()
+        private void PopulateServicesDropDownList(object selectedService = null)
         {
-            ViewData["ClientId"] = new SelectList(_context.Clients, "ID", "FullName");
-            ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "ServiceName");
-            return View();
+            var servicesQuery = from d in _context.Services
+                                   orderby d.ServiceName
+                                   select d;
+            ViewBag.ServiceId = new SelectList(servicesQuery.AsNoTracking(), "ServiceId", "ServiceName", selectedService);
+			ViewBag.SelectedService = selectedService;
+        }
+
+		private void PopulateClientDropDownList(object selectedClient = null)
+		{
+			var clientsQuery = from d in _context.Clients
+								orderby d.LastName
+								select d;
+			ViewBag.ClientId = new SelectList(clientsQuery.AsNoTracking(), "ID", "FullName", selectedClient);
+			ViewBag.SelectedClient = selectedClient;
+		}
+
+		//private void PopulateServiceProviderDropDownList(int id, object selectedServiceProvider = null)
+		//{
+		//	var serviceProviderQuery = from d in _context.ServiceAssignments.Where(p => p.ServiceID == id).Include(a => a.ServiceProvider).OrderBy(i => i.LastName)
+		//						select d;
+
+		//	ViewBag.serviceProviderId = new SelectList(serviceProviderQuery.AsNoTracking(), "ServiceProviderID", "ServiceProvider.FullName", selectedServiceProvider);
+		//	ViewBag.SelectedServiceProvider = selectedServiceProvider;
+		//}
+
+		// GET: Appointments/Create
+		public IActionResult Create()
+        {
+            //ViewData["ClientId"] = new SelectList(_context.Clients, "ID", "FullName");
+            PopulateClientDropDownList();
+            //ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "ServiceName");
+            PopulateServicesDropDownList();
+			return View();
         }
 
         // POST: Appointments/Create
@@ -112,8 +141,10 @@ namespace TimeToWork.Views.Appointments
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["ClientId"] = new SelectList(_context.Clients, "ID", "FullName", appointment.ClientId);
-            ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "ServiceName", appointment.ServiceId);
+            //ViewData["ClientId"] = new SelectList(_context.Clients, "ID", "FullName", appointment.ClientId);
+            PopulateClientDropDownList(appointment.ClientId);
+            //ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "ServiceName", appointment.ServiceId);
+            PopulateServicesDropDownList(appointment.ServiceId);
             return View(appointment);
         }
 
