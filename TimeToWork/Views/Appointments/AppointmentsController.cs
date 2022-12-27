@@ -110,6 +110,18 @@ namespace TimeToWork.Views.Appointments
 			ViewBag.SelectedClient = selectedClient;
 		}
 
+<<<<<<< HEAD
+=======
+		//private void PopulateServiceProviderDropDownList(int id, object selectedServiceProvider = null)
+		//{
+		//	var serviceProviderQuery = from d in _context.ServiceAssignments.Where(p => p.ServiceID == id).Include(a => a.ServiceProvider).OrderBy(i => i.LastName)
+		//						select d;
+
+		//	ViewBag.serviceProviderId = new SelectList(serviceProviderQuery.AsNoTracking(), "ServiceProviderID", "ServiceProvider.FullName", selectedServiceProvider);
+		//	ViewBag.SelectedServiceProvider = selectedServiceProvider;
+		//}
+
+>>>>>>> test2
 		// GET: Appointments/Create
 		public IActionResult Create()
         {
