@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using TimeToWork.Data;
 using TimeToWork.Models;
 
@@ -91,12 +92,32 @@ namespace TimeToWork.Views.Appointments
             return View(appointment);
         }
 
-        // GET: Appointments/Create
-        public IActionResult Create()
+        private void PopulateServicesDropDownList(object selectedService = null)
         {
-            ViewData["ClientId"] = new SelectList(_context.Clients, "ID", "FullName");
-            ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "ServiceName");
-            return View();
+            var servicesQuery = from d in _context.Services
+                                   orderby d.ServiceName
+                                   select d;
+            ViewBag.ServiceId = new SelectList(servicesQuery.AsNoTracking(), "ServiceId", "ServiceName", selectedService);
+			ViewBag.SelectedService = selectedService;
+        }
+
+		private void PopulateClientDropDownList(object selectedClient = null)
+		{
+			var clientsQuery = from d in _context.Clients
+								orderby d.LastName
+								select d;
+			ViewBag.ClientId = new SelectList(clientsQuery.AsNoTracking(), "ID", "FullName", selectedClient);
+			ViewBag.SelectedClient = selectedClient;
+		}
+
+		// GET: Appointments/Create
+		public IActionResult Create()
+        {
+            //ViewData["ClientId"] = new SelectList(_context.Clients, "ID", "FullName");
+            PopulateClientDropDownList();
+            //ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "ServiceName");
+            PopulateServicesDropDownList();
+			return View();
         }
 
         // POST: Appointments/Create
@@ -112,8 +133,10 @@ namespace TimeToWork.Views.Appointments
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["ClientId"] = new SelectList(_context.Clients, "ID", "FullName", appointment.ClientId);
-            ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "ServiceName", appointment.ServiceId);
+            //ViewData["ClientId"] = new SelectList(_context.Clients, "ID", "FullName", appointment.ClientId);
+            PopulateClientDropDownList(appointment.ClientId);
+            //ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "ServiceName", appointment.ServiceId);
+            PopulateServicesDropDownList(appointment.ServiceId);
             return View(appointment);
         }
 
